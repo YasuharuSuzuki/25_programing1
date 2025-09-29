@@ -51,6 +51,10 @@ try:
     
 except ImportError as e:
     print(f"❌ 初期化エラー: setup.shを再実行してください")
+    import traceback
+    print(f"⚠️ エラー: {e}")
+    print(f"📋 トレースバック:")
+    traceback.print_exc()
 
 except Exception as e:
     print(f"⚠️ 初期化エラーが発生しました")

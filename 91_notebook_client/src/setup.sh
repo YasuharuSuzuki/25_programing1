@@ -35,6 +35,7 @@ python_files=(
     "python/storage_helper.py"
     "python/email_detector.py"
     "python/notebook_reader.py"
+    "python/result_viewer.py"
     "python/grading_client.py"
     "python/submit_widget.py"
     "client_setup.py"
