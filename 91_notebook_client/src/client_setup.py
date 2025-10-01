@@ -12,6 +12,9 @@ load_dotenv()
 DEFAULT_GRADING_SYSTEM_URL = "https://auto-grading-system-gc6kcexpcq-an.a.run.app"
 GRADING_SYSTEM_URL = os.getenv('GRADING_SYSTEM_URL', DEFAULT_GRADING_SYSTEM_URL)
 
+# グローバル設定変数
+GLOBAL_NOTEBOOK_PATH = None
+
 # .clientディレクトリをPythonパスに追加
 client_dir = os.path.join(os.getcwd(), '.client')
 if client_dir not in sys.path:
@@ -27,7 +30,7 @@ try:
     
     # 採点システムURL設定付きの初期化関数
     def initialize_with_config():
-        """環境変数を考慮した初期化"""
+        """環境変数とnotebook_pathを考慮した初期化"""
         widget_manager = initialize_common_program()
         widget_manager.set_grading_system_url(GRADING_SYSTEM_URL)
         print(f"🔧 採点システムURL: {GRADING_SYSTEM_URL}")
@@ -38,7 +41,21 @@ try:
         """環境変数を考慮した送信ボタン作成"""
         widget_manager = SubmitWidget()
         widget_manager.set_grading_system_url(GRADING_SYSTEM_URL)
+        
+        # グローバル設定からnotebook_pathを適用
+        global GLOBAL_NOTEBOOK_PATH
+        if GLOBAL_NOTEBOOK_PATH:
+            widget_manager.set_notebook_path(GLOBAL_NOTEBOOK_PATH)
+        
         return widget_manager.create_submit_button(problem_number)
+    
+    # ノートブック環境変数設定関数
+    def set_notebook_config(notebook_path):
+        """ノートブック固有の環境変数を設定"""
+        global GLOBAL_NOTEBOOK_PATH
+        GLOBAL_NOTEBOOK_PATH = notebook_path
+        print(f"📋 ノートブックパス: {notebook_path}")
+        print("✅ グローバル設定に保存しました")
     
     # 初期化実行
     initialize_with_config()
@@ -47,6 +64,7 @@ try:
     
     # グローバル名前空間に主要関数をエクスポート
     globals()['create_submit_button'] = create_submit_button_with_config
+    globals()['set_notebook_config'] = set_notebook_config
     globals()['GRADING_SYSTEM_URL'] = GRADING_SYSTEM_URL
     
 except ImportError as e:

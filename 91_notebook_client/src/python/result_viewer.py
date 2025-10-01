@@ -18,30 +18,12 @@ class ResultViewer:
         採点結果をProblem単位で表示
         
         Args:
-            result_data (dict): 採点システムからのレスポンスデータ
-                Expected format:
-                {
-                    "student_id": "student@example.com",
-                    "assignment_id": "practice_problem_1",
-                    "notebook_results": {
-                        "problems": [
-                            {
-                                "problem_number": 1,
-                                "student_score": 20,
-                                "answer_full_score": 20
-                            },
-                            ...
-                        ],
-                        "execution_log": "..."
-                    },
-                    "timestamp": "2023-09-17T12:00:00Z"
-                }
         """
         if not result_data or "notebook_results" not in result_data:
             print("❌ 採点結果データが無効です")
             return
         
-        student_id = result_data.get("student_id", "不明")
+        student_email = result_data.get("student_email", result_data.get("student_id", "不明"))
         assignment_id = result_data.get("assignment_id", "不明")
         timestamp = result_data.get("timestamp", "不明")
         
@@ -57,7 +39,7 @@ class ResultViewer:
         print("="*80)
         print("🎯 採点結果レポート")
         print("="*80)
-        print(f"📧 学生ID: {student_id}")
+        print(f"📧 学生メール: {student_email}")
         print(f"📝 課題ID: {assignment_id}")
         print(f"🕒 採点時刻: {timestamp}")
         print(f"📊 総合得点: {total_earned}/{total_possible} ({success_rate:.1f}%)")
@@ -116,7 +98,7 @@ class ResultViewer:
             print(f"🔍 利用可能なキー: {list(result_data.keys())}")
             return
         
-        student_id = result_data.get("student_id", "不明")
+        student_email = result_data.get("student_email", result_data.get("student_id", "不明"))
         assignment_id = result_data.get("assignment_id", "不明")
         timestamp = result_data.get("timestamp", "不明")
         
@@ -187,18 +169,72 @@ class ResultViewer:
                 if submitted_problem:
                     student_score = submitted_problem.get("student_score", 0)
                     answer_full_score = submitted_problem.get("answer_full_score", 0)
-                    feedback = submitted_problem.get("feedback", "")
-                    error_message = submitted_problem.get("error_message", "")
+                    sub_problems = submitted_problem.get("sub_problems", [])
                     
                     print(f"\n🚀 問題 {submitted_problem_number}")
                     print(f"   得点: {student_score}/{answer_full_score}点")
                     print(f"   判定: {'✅ 正解' if student_score >= answer_full_score else '❌ 不正解'}")
                     
-                    if feedback and feedback.strip():
-                        print(f"   💬 フィードバック: {feedback}")
-                    
-                    if error_message and error_message.strip():
-                        print(f"   ⚠️  エラー: {error_message}")
+                    # SubProblemの詳細情報を表示
+                    # 用語としては「SubProblem」と言われても学生さんわからないので、使わないでください。
+                    if sub_problems:
+                        print(f"\n🔍 詳細情報 ({len(sub_problems)}個):")
+                        print("-" * 70)
+                        
+                        for idx, sub_problem in enumerate(sub_problems, 1):
+                            # 類似度を取得（新仕様）
+                            similarity = sub_problem["markdown_similarity"]
+                            
+                            # 学生マークダウンから問題タイトルを抽出（#を除去）
+                            student_markdown = sub_problem.get("student_markdown_cell", "")
+                            if student_markdown:
+                                # マークダウンの#を除去し、最初の行をタイトルとして使用
+                                title_line = student_markdown.split('\n')[0]
+                                clean_title = title_line.replace('#', '').strip()
+                            else:
+                                clean_title = f"詳細 {idx}"
+                            
+                            print(f"\n  📋 詳細 {idx}: {clean_title}")
+                            
+                            # 学生側コードセル（提出コード）
+                            student_code_cells = sub_problem.get("student_code_cells", [])
+                            if student_code_cells:
+                                print(f"    💻 提出コード ({len(student_code_cells)}個):")
+                                for j, code in enumerate(student_code_cells, 1):
+                                    print(f"      {j}. {code}")
+                            else:
+                                print(f"    💻 提出コード: (未検出)")
+                            
+                            # 得点率（％表記）
+                            student_score_rate = sub_problem.get("student_score_rate", 0.0)
+                            print(f"    📊 得点率: {student_score_rate*100:.0f}%")
+                            
+                            # フィードバック
+                            feedbacks = sub_problem.get("feedbacks", [])
+                            if feedbacks:
+                                print(f"    💬 フィードバック:")
+                                for feedback_item in feedbacks:
+                                    fb_messages = feedback_item.get("messages", [])
+                                    for msg in fb_messages:
+                                        print(f"      {msg}")
+                            else:
+                                print(f"    💬 フィードバック: 正解です！")
+                            
+                            # 類似度が0.9未満の場合、マークダウン文字列を警告付きで表記
+                            if similarity < 0.9:
+                                answer_markdown = sub_problem.get("answer_markdown_cell", "")
+                                print(f"    ⚠️  マークダウン類似度が低いです（{similarity:.2f}）")
+                                print(f"         問題文を誤って修正・削除した可能性があります")
+                                print(f"         教員に相談してください")
+                                if answer_markdown:
+                                    print(f"         期待される問題文: {answer_markdown[:100]}...")
+                                if student_markdown:
+                                    print(f"         提出された問題文: {student_markdown[:100]}...")
+                        
+                        print("-" * 70)
+                    else:
+                        print(f"\n⚠️  サブ問題情報が利用できません")
+                
                 else:
                     print(f"❌ 問題 {submitted_problem_number} の詳細情報が見つかりませんでした")
                 
@@ -237,7 +273,7 @@ class ResultViewer:
             display(HTML('<div style="color: red; font-weight: bold;">❌ 採点結果データが無効です</div>'))
             return
         
-        student_id = result_data.get("student_id", "不明")
+        student_email = result_data.get("student_email", result_data.get("student_id", "不明"))
         assignment_id = result_data.get("assignment_id", "不明")
         timestamp = result_data.get("timestamp", "不明")
         
@@ -311,7 +347,7 @@ class ResultViewer:
             </div>
             
             <div class="result-summary">
-                <strong>📧 学生ID:</strong> {student_id}<br>
+                <strong>📧 学生メール:</strong> {student_email}<br>
                 <strong>📝 課題ID:</strong> {assignment_id}<br>
                 <strong>🕒 採点時刻:</strong> {timestamp}<br>
                 <strong>📊 総合得点:</strong> {total_earned}/{total_possible} ({success_rate:.1f}%)
