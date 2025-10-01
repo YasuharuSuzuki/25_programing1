@@ -23,12 +23,12 @@ class ResultViewer:
                 {
                     "student_id": "student@example.com",
                     "assignment_id": "practice_problem_1",
-                    "notebook_result": {
+                    "notebook_results": {
                         "problems": [
                             {
                                 "problem_number": 1,
-                                "points_earned": 20,
-                                "points_total": 20
+                                "student_score": 20,
+                                "answer_full_score": 20
                             },
                             ...
                         ],
@@ -37,7 +37,7 @@ class ResultViewer:
                     "timestamp": "2023-09-17T12:00:00Z"
                 }
         """
-        if not result_data or "notebook_result" not in result_data:
+        if not result_data or "notebook_results" not in result_data:
             print("❌ 採点結果データが無効です")
             return
         
@@ -45,13 +45,13 @@ class ResultViewer:
         assignment_id = result_data.get("assignment_id", "不明")
         timestamp = result_data.get("timestamp", "不明")
         
-        notebook_result = result_data["notebook_result"]
+        notebook_result = result_data["notebook_results"]
         problems = notebook_result.get("problems", [])
         execution_log = notebook_result.get("execution_log", "")
         
         # 総合結果を計算
-        total_earned = sum(p.get("points_earned", 0) for p in problems)
-        total_possible = sum(p.get("points_total", 0) for p in problems)
+        total_earned = sum(p.get("student_score", 0) for p in problems)
+        total_possible = sum(p.get("answer_full_score", 0) for p in problems)
         success_rate = (total_earned / total_possible * 100) if total_possible > 0 else 0
         
         print("="*80)
@@ -70,18 +70,18 @@ class ResultViewer:
             
             for i, problem in enumerate(problems, 1):
                 problem_number = problem.get("problem_number", i)
-                points_earned = problem.get("points_earned", 0)
-                points_total = problem.get("points_total", 0)
+                student_score = problem.get("student_score", 0)
+                answer_full_score = problem.get("answer_full_score", 0)
                 
                 # 合格判定
-                if points_total > 0:
-                    success_rate_problem = (points_earned / points_total * 100)
-                    status = "✅ 合格" if points_earned == points_total else "⚠️ 部分点" if points_earned > 0 else "❌ 不合格"
+                if answer_full_score > 0:
+                    success_rate_problem = (student_score / answer_full_score * 100)
+                    status = "✅ 合格" if student_score == answer_full_score else "⚠️ 部分点" if student_score > 0 else "❌ 不合格"
                 else:
                     success_rate_problem = 0
                     status = "❓ 採点不可"
                 
-                print(f"  Problem {problem_number:2d}: {points_earned:3d}/{points_total:3d}点 ({success_rate_problem:5.1f}%) {status}")
+                print(f"  Problem {problem_number:2d}: {student_score:3d}/{answer_full_score:3d}点 ({success_rate_problem:5.1f}%) {status}")
             
             print("-" * 60)
         else:
@@ -110,7 +110,7 @@ class ResultViewer:
             print("❌ 採点結果データがありません")
             return
             
-        notebook_result = result_data.get("notebook_result")
+        notebook_result = result_data.get("notebook_results")
         if not notebook_result:
             print("❌ 採点結果データが無効です")
             print(f"🔍 利用可能なキー: {list(result_data.keys())}")
@@ -124,8 +124,8 @@ class ResultViewer:
         overall_feedback = notebook_result.get("overall_feedback", "")
         
         # 総合結果を計算
-        total_earned = sum(p.get("points_earned", 0) for p in problems)
-        total_possible = sum(p.get("points_total", 0) for p in problems)
+        total_earned = sum(p.get("student_score", 0) for p in problems)
+        total_possible = sum(p.get("answer_full_score", 0) for p in problems)
         success_rate = (total_earned / total_possible * 100) if total_possible > 0 else 0
         
         # 基本情報の表示
@@ -141,18 +141,18 @@ class ResultViewer:
             print("-" * 60)
             for problem in problems:
                 problem_number = problem.get("problem_number", "?")
-                points_earned = problem.get("points_earned", 0)
-                points_total = problem.get("points_total", 0)
+                student_score = problem.get("student_score", 0)
+                answer_full_score = problem.get("answer_full_score", 0)
                 
-                status = "✅" if points_earned >= points_total else "❌"
-                rate = (points_earned / points_total * 100) if points_total > 0 else 0
+                status = "✅" if student_score >= answer_full_score else "❌"
+                rate = (student_score / answer_full_score * 100) if answer_full_score > 0 else 0
                 
                 # 送信した問題にマークを付ける
                 if problem_number == submitted_problem_number:
                     marker = "🚀"  # 送信マーク
-                    print(f"  問題 {problem_number:02d}: {points_earned:3d}/{points_total:3d}点 ({rate:5.1f}%) {status} {marker}")
+                    print(f"  問題 {problem_number:02d}: {student_score:3d}/{answer_full_score:3d}点 ({rate:5.1f}%) {status} {marker}")
                 else:
-                    print(f"  問題 {problem_number:02d}: {points_earned:3d}/{points_total:3d}点 ({rate:5.1f}%) {status}")
+                    print(f"  問題 {problem_number:02d}: {student_score:3d}/{answer_full_score:3d}点 ({rate:5.1f}%) {status}")
             print("-" * 60)
         
         print("="*80)
@@ -185,14 +185,14 @@ class ResultViewer:
                         break
                 
                 if submitted_problem:
-                    points_earned = submitted_problem.get("points_earned", 0)
-                    points_total = submitted_problem.get("points_total", 0)
+                    student_score = submitted_problem.get("student_score", 0)
+                    answer_full_score = submitted_problem.get("answer_full_score", 0)
                     feedback = submitted_problem.get("feedback", "")
                     error_message = submitted_problem.get("error_message", "")
                     
                     print(f"\n🚀 問題 {submitted_problem_number}")
-                    print(f"   得点: {points_earned}/{points_total}点")
-                    print(f"   判定: {'✅ 正解' if points_earned >= points_total else '❌ 不正解'}")
+                    print(f"   得点: {student_score}/{answer_full_score}点")
+                    print(f"   判定: {'✅ 正解' if student_score >= answer_full_score else '❌ 不正解'}")
                     
                     if feedback and feedback.strip():
                         print(f"   💬 フィードバック: {feedback}")
@@ -233,7 +233,7 @@ class ResultViewer:
         Args:
             result_data (dict): 採点システムからのレスポンスデータ
         """
-        if not result_data or "notebook_result" not in result_data:
+        if not result_data or "notebook_results" not in result_data:
             display(HTML('<div style="color: red; font-weight: bold;">❌ 採点結果データが無効です</div>'))
             return
         
@@ -241,13 +241,13 @@ class ResultViewer:
         assignment_id = result_data.get("assignment_id", "不明")
         timestamp = result_data.get("timestamp", "不明")
         
-        notebook_result = result_data["notebook_result"]
+        notebook_result = result_data["notebook_results"]
         problems = notebook_result.get("problems", [])
         execution_log = notebook_result.get("execution_log", "")
         
         # 総合結果を計算
-        total_earned = sum(p.get("points_earned", 0) for p in problems)
-        total_possible = sum(p.get("points_total", 0) for p in problems)
+        total_earned = sum(p.get("student_score", 0) for p in problems)
+        total_possible = sum(p.get("answer_full_score", 0) for p in problems)
         success_rate = (total_earned / total_possible * 100) if total_possible > 0 else 0
         
         # CSSスタイル
@@ -326,15 +326,15 @@ class ResultViewer:
         if problems:
             for i, problem in enumerate(problems, 1):
                 problem_number = problem.get("problem_number", i)
-                points_earned = problem.get("points_earned", 0)
-                points_total = problem.get("points_total", 0)
+                student_score = problem.get("student_score", 0)
+                answer_full_score = problem.get("answer_full_score", 0)
                 
-                if points_total > 0:
-                    success_rate_problem = (points_earned / points_total * 100)
-                    if points_earned == points_total:
+                if answer_full_score > 0:
+                    success_rate_problem = (student_score / answer_full_score * 100)
+                    if student_score == answer_full_score:
                         status = '✅ 合格'
                         status_class = 'status-pass'
-                    elif points_earned > 0:
+                    elif student_score > 0:
                         status = '⚠️ 部分点'
                         status_class = 'status-partial'
                     else:
@@ -348,7 +348,7 @@ class ResultViewer:
                 html_content += f"""
                     <div class="problem-row">
                         <span>Problem {problem_number}</span>
-                        <span>{points_earned}/{points_total}点 ({success_rate_problem:.1f}%)</span>
+                        <span>{student_score}/{answer_full_score}点 ({success_rate_problem:.1f}%)</span>
                         <span class="{status_class}">{status}</span>
                     </div>
                 """
