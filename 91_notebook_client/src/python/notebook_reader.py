@@ -150,7 +150,7 @@ class NotebookReader:
             print(f"❌ セル内容取得エラー: {str(e)}")
             return []
     
-    def save_request_packet(self, student_id="debug@example.com", assignment_id="debug_test"):
+    def save_request_packet(self, student_email, assignment_id):
         """現在のNotebookをリクエスト形式でファイル保存（デバッグ用）"""
         try:
             # Notebook内容取得
@@ -164,7 +164,7 @@ class NotebookReader:
             # リクエストデータ作成
             request_data = {
                 'notebook': notebook_data,
-                'student_id': student_id,
+                'student_email': student_email,
                 'assignment_id': assignment_id,
                 'notebook_path': '02_プログラミング言語Python/01_プログラミング言語Python.ipynb'
             }

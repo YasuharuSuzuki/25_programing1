@@ -176,3 +176,11 @@ class SubmitWidget:
     def set_grading_system_url(self, url):
         """採点システムのURLを設定"""
         self.grading_client.set_grading_system_url(url)
+    
+    def set_notebook_path(self, notebook_path):
+        """ノートブックパスを設定"""
+        self.grading_client.set_notebook_path(notebook_path)
+    
+    def get_notebook_path(self):
+        """現在のノートブックパスを取得"""
+        return self.grading_client.get_notebook_path()

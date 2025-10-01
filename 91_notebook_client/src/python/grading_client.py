@@ -12,7 +12,7 @@ class GradingClient:
     
     def __init__(self, base_url="http://localhost:8080"):
         self.base_url = base_url
-        self.assignment_path = "02_プログラミング言語Python/01_プログラミング言語Python.ipynb"
+        self.notebook_path = None
         self.headers = {'Content-Type': 'application/json'}
     
     def set_grading_system_url(self, url):
@@ -24,12 +24,21 @@ class GradingClient:
         """現在の採点システムURLを取得"""
         return self.base_url
     
+    def set_notebook_path(self, notebook_path):
+        """ノートブックパスを設定"""
+        self.notebook_path = notebook_path
+        print(f"📋 ノートブックパス設定: {notebook_path}")
+    
+    def get_notebook_path(self):
+        """現在のノートブックパスを取得"""
+        return self.notebook_path
+    
     def create_submission_data(self, student_email, problem_number, notebook_cells):
         """送信データを構築"""
         return {
-            "student_id": student_email,
+            "student_email": student_email,
             "assignment_id": f"practice_problem_{problem_number}",
-            "notebook_path": self.assignment_path,
+            "notebook_path": self.notebook_path,
             "notebook": {
                 "cells": notebook_cells,
                 "metadata": {
@@ -145,7 +154,7 @@ class GradingClient:
             if success:
                 print(f"✅ 送信完了！")
                 print(f"   メールアドレス: {student_email}")
-                print(f"   課題: {self.assignment_path}")
+                print(f"   ノートブック: {self.notebook_path}")
                 print(f"   問題番号: {problem_number}")
                 print(f"   送信セル数: {len(notebook_cells)}")
                 print("")
@@ -156,7 +165,7 @@ class GradingClient:
                     from .result_viewer import ResultViewer
                     viewer = ResultViewer()
                     
-                    # 結果をファイルに保存（調査用）
+                    # 結果をファイルに保存
                     saved_file = viewer.save_result_to_file(result)
                     if saved_file:
                         print(f"💾 採点結果を保存しました: {saved_file}")
