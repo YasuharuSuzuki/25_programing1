@@ -27,7 +27,7 @@ class NotebookReader:
                 
                 # #@titleで始まるセルは除外
                 if source.strip().startswith('#@title'):
-                    print(f"🚫 除外セル（#@title）: {source[:50]}...")
+                    # print(f"🚫 除外セル（#@title）: {source[:50]}...")
                     continue
             
             # 除外対象でない場合は追加

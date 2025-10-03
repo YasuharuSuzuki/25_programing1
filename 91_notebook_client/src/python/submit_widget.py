@@ -136,7 +136,7 @@ class SubmitWidget:
                     return
                 
                 # 自動採点システムに送信
-                success, result, error_msg = self.grading_client.submit_assignment(
+                self.grading_client.submit_assignment(
                     student_email, 
                     problem_number, 
                     notebook_cells,

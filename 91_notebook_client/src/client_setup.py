@@ -27,6 +27,7 @@ try:
         initialize_common_program,
         SubmitWidget
     )
+    from python.grading_client import GradingClient
     
     # 採点システムURL設定付きの初期化関数
     def initialize_with_config():
@@ -57,6 +58,31 @@ try:
         print(f"📋 ノートブックパス: {notebook_path}")
         print("✅ グローバル設定に保存しました")
     
+    # キャンセルボタンテスト関数
+    def test_cancel_button(max_retry, retry_delay):
+        """キャンセルボタンのテスト関数"""
+        client = GradingClient()
+        client.set_grading_system_url(GRADING_SYSTEM_URL)
+        return client.test_cancel_button(max_retry, retry_delay)
+    
+    # # リトライカウントダウンテスト関数  
+    # def test_retry_countdown(retry_delay=5):
+    #     """リトライカウントダウンのテスト関数（通信なし）"""
+    #     client = GradingClient()
+    #     client.set_grading_system_url(GRADING_SYSTEM_URL)
+    #     print(f"🧪 リトライカウントダウンテスト ({retry_delay}秒)")
+        
+    #     # テスト用のコールバック（通信は行わない）
+    #     def on_complete():
+    #         print("✅ テスト結果: カウントダウン完了")
+        
+    #     def on_cancel():
+    #         print("✅ テスト結果: キャンセルされました")
+        
+    #     # 通信処理を実行しないテスト版
+    #     client.show_retry_countdown_with_cancel(retry_delay, 1, 3, on_complete, on_cancel)
+    #     print("🧪 テスト開始されました")
+    
     # 初期化実行
     initialize_with_config()
     
@@ -65,6 +91,8 @@ try:
     # グローバル名前空間に主要関数をエクスポート
     globals()['create_submit_button'] = create_submit_button_with_config
     globals()['set_notebook_config'] = set_notebook_config
+    globals()['test_cancel_button'] = test_cancel_button
+    # globals()['test_retry_countdown'] = test_retry_countdown
     globals()['GRADING_SYSTEM_URL'] = GRADING_SYSTEM_URL
     
 except ImportError as e:
