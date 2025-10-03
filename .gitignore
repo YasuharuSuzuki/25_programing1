@@ -19,3 +19,6 @@ venv/
 
 # AI
 .claude/
+
+# client program
+**/.client
