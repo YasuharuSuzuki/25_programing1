@@ -39,10 +39,15 @@ class NotebookReader:
         """Google Colabからノートブック情報を取得"""
         try:
             from google.colab import _message
-            notebook_data = _message.blocking_request('get_notebook_info', request='', timeout_sec=10)
+            notebook_data = _message.blocking_request('get_ipynb', request='', timeout_sec=10)
             
-            if 'cells' in notebook_data:
-                all_cells = notebook_data['cells']
+            # レスポンス構造: {'ipynb': {'cells': [...]}}
+            if (isinstance(notebook_data, dict) and 
+                'ipynb' in notebook_data and 
+                isinstance(notebook_data['ipynb'], dict) and
+                'cells' in notebook_data['ipynb']):
+                
+                all_cells = notebook_data['ipynb']['cells']
                 print(f"✅ Google Colab: {len(all_cells)}セル取得")
                 return all_cells
             else:
