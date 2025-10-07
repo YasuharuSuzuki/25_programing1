@@ -13,6 +13,7 @@ class NotebookReader:
     
     def __init__(self):
         self.env_detector = EnvironmentDetector()
+        self.notebook_path = None
     
     def filter_submission_cells(self, cells):
         """送信対象外セルを除外するフィルター（#@titleで始まるセルを除外）"""
@@ -34,6 +35,11 @@ class NotebookReader:
             filtered_cells.append(cell)
         
         return filtered_cells
+    
+    def set_notebook_path(self, notebook_path):
+        """ノートブックパスを設定"""
+        self.notebook_path = notebook_path
+        # print(f"📋 ノートブックパス設定: {notebook_path}")
     
     def get_notebook_cells_colab(self):
         """Google Colabからノートブック情報を取得"""
@@ -61,20 +67,13 @@ class NotebookReader:
     def get_notebook_cells_vscode(self):
         """VS Code環境からノートブックファイルを読み込み"""
         try:
-            # カレントディレクトリの.ipynbファイルを検索
             notebook_file = None
-            ipynb_files = glob.glob("*.ipynb")
             
-            if ipynb_files:
-                # ファイル名パターンでマッチング
-                for file in ipynb_files:
-                    if "プログラミング言語Python" in file:
-                        notebook_file = file
-                        break
-                
-                # マッチしない場合は最初のファイルを使用
-                if not notebook_file:
-                    notebook_file = ipynb_files[0]
+            # set_notebook_path() で指定したパスからファイル名のみ抽出（フォルダパスは無視）
+            target_filename = os.path.basename(self.notebook_path)
+            base_filename = os.path.splitext(target_filename)[0]                 # 拡張子を除いた部分 を抽出
+            ipynb_files = glob.glob(base_filename + "*.ipynb")                   # glob.globで検索（拡張子を除いた部分 + *.ipynb）※解答Notebook等を考慮している
+            notebook_file = max(ipynb_files, key=lambda f: os.path.getmtime(f))  # 更新日付が最新のものを取得
             
             if notebook_file and os.path.exists(notebook_file):
                 with open(notebook_file, 'r', encoding='utf-8') as f:
