@@ -180,6 +180,7 @@ class SubmitWidget:
     def set_notebook_path(self, notebook_path):
         """ノートブックパスを設定"""
         self.grading_client.set_notebook_path(notebook_path)
+        self.notebook_reader.set_notebook_path(notebook_path)
     
     def get_notebook_path(self):
         """現在のノートブックパスを取得"""
