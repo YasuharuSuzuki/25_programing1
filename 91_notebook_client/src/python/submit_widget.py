@@ -80,7 +80,7 @@ class SubmitWidget:
         
         # Python版メールアドレス取得ボタン
         reload_python_button = widgets.Button(
-            description='🔄 メアド再取得',
+            description='🔄 メアド取得',
             disabled=False,
             button_style='warning',
             tooltip='Google Colabからメールアドレスを取得',
