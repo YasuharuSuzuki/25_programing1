@@ -65,23 +65,6 @@ try:
         client.set_grading_system_url(GRADING_SYSTEM_URL)
         return client.test_cancel_button(max_retry, retry_delay)
     
-    # # リトライカウントダウンテスト関数  
-    # def test_retry_countdown(retry_delay=5):
-    #     """リトライカウントダウンのテスト関数（通信なし）"""
-    #     client = GradingClient()
-    #     client.set_grading_system_url(GRADING_SYSTEM_URL)
-    #     print(f"🧪 リトライカウントダウンテスト ({retry_delay}秒)")
-        
-    #     # テスト用のコールバック（通信は行わない）
-    #     def on_complete():
-    #         print("✅ テスト結果: カウントダウン完了")
-        
-    #     def on_cancel():
-    #         print("✅ テスト結果: キャンセルされました")
-        
-    #     # 通信処理を実行しないテスト版
-    #     client.show_retry_countdown_with_cancel(retry_delay, 1, 3, on_complete, on_cancel)
-    #     print("🧪 テスト開始されました")
     
     # 初期化実行
     initialize_with_config()

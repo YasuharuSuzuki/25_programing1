@@ -5,6 +5,7 @@
 import json
 import os
 import glob
+from typing import List
 from datetime import datetime
 from .environment_detector import EnvironmentDetector
 
@@ -63,7 +64,50 @@ class NotebookReader:
         except Exception as e:
             print(f"❌ Google Colab API エラー: {str(e)}")
             return []
-    
+
+
+    def _find_ipynb(self, glob1_pattern: str) -> List[str]:
+        """
+        1. glob1_pattern で通常の glob 検索を行う
+        2. 見つからなければ *.ipynb を列挙し、
+        NFC 正規化したファイル名でパターン照合して一致した元パスを返す
+        3. どちらでも見つからなければ空文字を返す
+
+        どうもMac環境化では、ファイル名をクリップボードに貼り付けると違う文字コードになっている様子（逆かもしれない）
+        NFCなどの仕組みは調べてください（プとかドとか濁点付きのカタカナを2文字で記憶する、とかなんとか）
+
+        Parameters
+        ----------
+        glob1_pattern : str
+            例: "01_プログラミング言語Python*.ipynb"
+
+        Returns
+        -------
+        str
+            見つかったファイルのオリジナルパス。見つからなければ ""。
+        """
+        import fnmatch
+        import unicodedata
+
+        # ① 普通に glob 検索
+        hits = glob.glob(glob1_pattern)
+        if hits:
+            return hits
+
+        # ② フォールバック検索
+        candidates = glob.glob("*.ipynb")
+
+        # パターンと候補をNFC正規化して比較
+        normalized_pattern = unicodedata.normalize("NFC", glob1_pattern)
+        # print(f"candidates={candidates}, normalized_pattern={normalized_pattern}")
+        hits = []
+        for orig in candidates:
+            norm_path = unicodedata.normalize("NFC", orig)
+            if fnmatch.fnmatch(norm_path, normalized_pattern):
+                hits.append(orig)
+
+        return hits
+
     def get_notebook_cells_vscode(self):
         """VS Code環境からノートブックファイルを読み込み"""
         try:
@@ -72,7 +116,11 @@ class NotebookReader:
             # set_notebook_path() で指定したパスからファイル名のみ抽出（フォルダパスは無視）
             target_filename = os.path.basename(self.notebook_path)
             base_filename = os.path.splitext(target_filename)[0]                 # 拡張子を除いた部分 を抽出
-            ipynb_files = glob.glob(base_filename + "*.ipynb")                   # glob.globで検索（拡張子を除いた部分 + *.ipynb）※解答Notebook等を考慮している
+            search_path = base_filename + "*.ipynb"
+            ipynb_files = self._find_ipynb(search_path)
+            # search_path = "*.ipynb"
+            # print(f"❌ debug: search_path={search_path}")
+            # ipynb_files = glob.glob(search_path)                   # glob.globで検索（拡張子を除いた部分 + *.ipynb）※解答Notebook等を考慮している
             notebook_file = max(ipynb_files, key=lambda f: os.path.getmtime(f))  # 更新日付が最新のものを取得
             
             if notebook_file and os.path.exists(notebook_file):

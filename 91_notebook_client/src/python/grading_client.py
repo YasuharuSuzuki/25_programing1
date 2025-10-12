@@ -11,6 +11,9 @@ from IPython.display import display, HTML, clear_output
 import ipywidgets as widgets
 import asyncio
 
+# Geminiのレスポンスが30秒超えることがあるため、長くしました
+REQUEST_TIMEOUT = 180
+
 class GradingClient:
     """自動採点システムとの通信を管理するクラス"""
     
@@ -80,7 +83,7 @@ class GradingClient:
             print(f"⚠️ 自動保存エラー: {save_error}")
             return None
     
-    def save_error_response_to_file(self, response, attempt):
+    def _save_error_response_to_file(self, response, attempt):
         """エラーレスポンスを詳細に保存（デバッグ用）"""
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -106,7 +109,36 @@ class GradingClient:
             print(f"⚠️ エラーレスポンス保存失敗: {save_error}")
             return None, None
     
-    def display_error_details_widget(self, error_data, filename):
+    def _display_error_from_response_text(self, error_data):
+        response_data = json.loads(error_data['response_text'])
+        pre_text = ""
+        if 'error' in response_data:
+            pre_text += f"  Error: {response_data['error']}\n"
+
+            # tracebackがある場合
+            if 'traceback' in response_data:
+                pre_text += f"\n{'='*80}\n"
+                pre_text += f"🚨 API ERROR TRACEBACK\n"
+                pre_text += f"{'='*80}\n"
+                pre_text += response_data['traceback']
+                pre_text += f"{'='*80}\n"
+                if 'environment' in response_data:
+                    pre_text += f"Environment: {response_data['environment']}\n"
+                if 'details' in response_data:
+                    pre_text += f"Details: {response_data['details']}\n"
+                pre_text += f"{'='*80}\n"
+
+            # execution_logがある場合
+            if 'execution_log' in response_data:
+                pre_text += f"\n{'-'*60}\n"
+                pre_text += f"📊 EXECUTION LOG\n"
+                pre_text += f"{'-'*60}\n"
+                pre_text += response_data['execution_log']
+                pre_text += f"\n{'-'*60}\n"
+        return pre_text
+
+
+    def _display_error_details_widget(self, error_data, filename):
         """エラー詳細をWidgetで表示"""
         try:
             # エラー詳細表示用のHTML
@@ -123,7 +155,7 @@ class GradingClient:
                 </details>
                 <details style="margin-top: 10px;">
                     <summary style="cursor: pointer; color: #d63031; font-weight: bold;">📄 レスポンス本文</summary>
-                    <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; max-height: 300px;">{error_data['response_text']}</pre>
+                    <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; max-height: 300px;">{self._display_error_from_response_text(error_data)}</pre>
                 </details>
             </div>
             """
@@ -298,107 +330,7 @@ class GradingClient:
             import traceback
             traceback.print_exc()
     
-    def show_retry_countdown_with_cancel(self, retry_delay, attempt, max_retries, on_complete_callback=None, on_cancel_callback=None):
-        """リトライのカウントダウンとキャンセル機能を表示（コールバック方式）"""
-        try:
-            import threading
-            from time import time
-            
-            # リトライキャンセルフラグをリセット
-            self.cancel_retry = False
-            
-            print(f"🔄 リトライ {attempt}/{max_retries} を {retry_delay} 秒後に実行します...")
-            print("━" * 50)
-            print("⚠️ リトライをキャンセルする方法:")
-            print("1. 🛑 下のキャンセルボタンを押す")
-            print("2. 🔴 または Kernel → Interrupt を選択")
-            print("━" * 50)
-            
-            # プログレスバーとキャンセルボタン
-            progress_bar = widgets.IntProgress(
-                value=0,
-                min=0,
-                max=retry_delay,
-                description=f'リトライ待機中 ({attempt}/{max_retries}):',
-                bar_style='warning',
-                orientation='horizontal'
-            )
-            
-            cancel_button = widgets.Button(
-                description="❌ キャンセル",
-                button_style='danger',
-                layout=widgets.Layout(width='120px')
-            )
-            
-            # キャンセルボタンのイベントハンドラ
-            def on_cancel_clicked(_):
-                self.cancel_retry = True
-                cancel_button.disabled = True
-                cancel_button.description = "キャンセル済み"
-                progress_bar.bar_style = 'danger'
-                progress_bar.description = 'キャンセル済み:'
-                print("🚫 リトライがキャンセルされました！")
-                if on_cancel_callback:
-                    on_cancel_callback()
-            
-            cancel_button.on_click(on_cancel_clicked)
-            
-            # UIを表示
-            ui_box = widgets.VBox([progress_bar, cancel_button])
-            display(ui_box)
-            
-            start_time = time()
-            
-            # 1秒間隔でのタイマーコールバック
-            def on_timer():
-                if self.cancel_retry:
-                    return  # キャンセル済みなら何もしない
-                
-                # 経過時間を計算してプログレスバーを更新
-                elapsed = time() - start_time
-                remaining_seconds = max(0, retry_delay - int(elapsed))
-                progress_value = min(int(elapsed), retry_delay)
-                
-                progress_bar.value = progress_value
-                progress_bar.description = f'リトライまであと {remaining_seconds} 秒 ({attempt}/{max_retries}):'
-                
-                # 時間が経過していない場合は次のタイマーをセット
-                if elapsed < retry_delay:
-                    next_timer = threading.Timer(1.0, on_timer)
-                    next_timer.start()
-                else:
-                    # カウントダウン完了
-                    progress_bar.value = retry_delay
-                    progress_bar.bar_style = 'success'
-                    progress_bar.description = f'リトライ {attempt}/{max_retries} 実行中:'
-                    cancel_button.disabled = True
-                    print(f"⏰ リトライ {attempt}/{max_retries} を実行します...")
-                    if on_complete_callback:
-                        print(f"🔄 on_complete_callback を呼び出します...")
-                        on_complete_callback()
-                    else:
-                        print(f"⚠️ on_complete_callback が None です")
-            
-            # 最初のタイマーを開始
-            countdown_timer = threading.Timer(1.0, on_timer)
-            countdown_timer.start()
-            
-            # コールバック方式なので戻り値は不要
-            
-        except Exception as e:
-            print(f"⚠️ リトライUI表示エラー: {e}")
-            import traceback
-            traceback.print_exc()
-            
-            # 最もシンプルなフォールバック
-            print(f"📝 {retry_delay}秒後にリトライします...")
-            print("🛑 キャンセルする場合は Kernel → Interrupt を選択してください")
-            
-            time.sleep(retry_delay)
-            if on_complete_callback:
-                on_complete_callback()
-    
-    def show_retry_countdown_with_cancel_for_real_send(self, retry_delay, attempt, max_retries, send_func, cancel_func):
+    def _show_retry_countdown_with_cancel(self, retry_delay, attempt, max_retries, send_func, cancel_func):
         """実際の送信処理用のリトライカウントダウン（show_retry_countdown_with_cancel2と同じ設計）"""
         try:
             import threading
@@ -503,7 +435,7 @@ class GradingClient:
                     print(f"⏰ リトライ {attempt}/{max_retries} を実行します...")
                     
                     # 再帰的にリトライ実行
-                    self.show_retry_countdown_with_cancel_for_real_send(
+                    self._show_retry_countdown_with_cancel(
                         retry_delay, attempt, max_retries, send_func, cancel_func
                     )
 
@@ -520,94 +452,8 @@ class GradingClient:
             print(f"📝 {retry_delay}秒後にリトライします...")
             print("🛑 キャンセルする場合は Kernel → Interrupt を選択してください")
     
-    def _perform_single_request(self):
-        """単一のHTTPリクエストを実行する独立した関数"""
-        try:
-            print(f"📡 送信試行 {self.current_attempt + 1}/{self.max_retries + 1}")
-            
-            response = requests.post(
-                f"{self.base_url}/grade",
-                json=self.current_submission_data,
-                headers=self.headers,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                print(f"✅ 送信完了！")
-                if self.success_callback:
-                    self.success_callback(result)
-            else:
-                self._handle_error_response(response)
-                
-        except requests.exceptions.RequestException as e:
-            self._handle_network_error(e)
-        except Exception as e:
-            self._handle_unexpected_error(e)
     
-    def _handle_error_response(self, response):
-        """HTTPエラーレスポンスの処理"""
-        # エラーレスポンスの詳細保存
-        filename, error_data = self.save_error_response_to_file(response, self.current_attempt + 1)
-        
-        error_msg = f"HTTP {response.status_code}: {response.text}"
-        print(f"❌ 送信エラー（試行 {self.current_attempt + 1}）: {error_msg}")
-        
-        # エラー詳細をWidgetで表示
-        if error_data and filename:
-            self.display_error_details_widget(error_data, filename)
-        
-        self._schedule_retry_or_fail(error_msg)
-    
-    def _handle_network_error(self, e):
-        """ネットワークエラーの処理"""
-        error_msg = f"ネットワークエラー: {str(e)}"
-        print(f"❌ 送信失敗（試行 {self.current_attempt + 1}）: {error_msg}")
-        self._schedule_retry_or_fail(error_msg)
-    
-    def _handle_unexpected_error(self, e):
-        """予期しないエラーの処理"""
-        error_msg = f"予期しないエラー: {str(e)}"
-        print(f"❌ 送信失敗（試行 {self.current_attempt + 1}）: {error_msg}")
-        self._schedule_retry_or_fail(error_msg)
-    
-    def _schedule_retry_or_fail(self, error_msg):
-        """リトライのスケジュールまたは失敗処理"""
-        print(f"🔍 _schedule_retry_or_fail 判定: 現在={self.current_attempt}, 最大={self.max_retries}")
-        if self.current_attempt < self.max_retries:
-            # リトライをスケジュール
-            print(f"✅ リトライ条件を満たしています。カウントダウンを開始します...")
-            self._start_retry_countdown()
-        else:
-            # 最大リトライ回数に達した
-            print(f"❌ 最大リトライ回数に達しました")
-            if self.error_callback:
-                self.error_callback(error_msg)
-    
-    def _start_retry_countdown(self):
-        """リトライ用のカウントダウンを開始"""
-        print(f"🟡 _start_retry_countdown が呼ばれました (現在の試行: {self.current_attempt + 1}/{self.max_retries + 1})")
-        
-        def on_retry_complete():
-            print(f"🔄 リトライカウントダウン完了 - 試行 {self.current_attempt + 1} → {self.current_attempt + 2}")
-            self.current_attempt += 1
-            self._perform_single_request()  # 再帰的にリトライ実行
-        
-        def on_retry_cancel():
-            self.cancel_retry = True
-            print("🚫 リトライがキャンセルされました")
-            if self.error_callback:
-                self.error_callback("リトライがユーザーによってキャンセルされました")
-        
-        self.show_retry_countdown_with_cancel(
-            self.retry_delay, 
-            self.current_attempt + 1, 
-            self.max_retries, 
-            on_retry_complete, 
-            on_retry_cancel
-        )
-    
-    def send_to_grading_system_with_retry_new(self, submission_data, max_retries=3, retry_delay=20, success_callback=None, error_callback=None):
+    def _send_to_grading_system_with_retry(self, submission_data, max_retries=3, retry_delay=20, success_callback=None, error_callback=None):
         """
         リトライ機能付きでCloudRunの自動採点システムに送信（新しい送信処理コールバック方式）
         
@@ -637,24 +483,23 @@ class GradingClient:
                     f"{self.base_url}/grade",
                     json=self.current_submission_data,
                     headers=self.headers,
-                    timeout=30
+                    timeout=REQUEST_TIMEOUT
                 )
                 
                 if response.status_code == 200:
                     result = response.json()
-                    print(f"✅ 送信完了！")
                     if self.success_callback:
                         self.success_callback(result)
                     return True  # 成功
                 else:
                     # エラーレスポンスの詳細保存
-                    filename, error_data = self.save_error_response_to_file(response, 0)
+                    filename, error_data = self._save_error_response_to_file(response, 0)
                     error_msg = f"HTTP {response.status_code}: {response.text}"
                     print(f"❌ 送信エラー: {error_msg}")
                     
                     # エラー詳細をWidgetで表示
                     if error_data and filename:
-                        self.display_error_details_widget(error_data, filename)
+                        self._display_error_details_widget(error_data, filename)
                     
                     return False  # 失敗
                     
@@ -674,7 +519,7 @@ class GradingClient:
                 self.error_callback("送信処理がユーザーによってキャンセルされました")
         
         # 新しいカウントダウン方式で送信開始（試行回数は0から開始）
-        self.show_retry_countdown_with_cancel_for_real_send(
+        self._show_retry_countdown_with_cancel(
             self.retry_delay, 0, self.max_retries, send_request, cancel_process
         )
     
@@ -694,10 +539,8 @@ class GradingClient:
             viewer = ResultViewer()
             
             # 結果をファイルに保存
-            saved_file = viewer.save_result_to_file(result)
-            if saved_file:
-                print(f"💾 採点結果を保存しました: {saved_file}")
-            
+            _ = viewer.save_result_to_file(result)
+
             viewer.display_grading_result_with_details(result, problem_number)
         except Exception as e:
             import traceback
@@ -742,7 +585,7 @@ class GradingClient:
                 self._handle_submission_error(error_msg)
             
             # リトライ機能付きで送信（新しいコールバック方式）
-            self.send_to_grading_system_with_retry_new(
+            self._send_to_grading_system_with_retry(
                 submission_data, 
                 success_callback=on_success,
                 error_callback=on_error
