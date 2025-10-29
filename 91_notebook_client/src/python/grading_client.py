@@ -129,11 +129,11 @@ class GradingClient:
                 pre_text += f"{'='*80}\n"
 
             # execution_logがある場合
-            if 'execution_log' in response_data:
+            if 'log' in response_data:
                 pre_text += f"\n{'-'*60}\n"
                 pre_text += f"📊 EXECUTION LOG\n"
                 pre_text += f"{'-'*60}\n"
-                pre_text += response_data['execution_log']
+                pre_text += response_data['log']
                 pre_text += f"\n{'-'*60}\n"
         return pre_text
 
