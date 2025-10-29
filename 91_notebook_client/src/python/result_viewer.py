@@ -29,7 +29,7 @@ class ResultViewer:
         
         notebook_result = result_data["notebook_results"]
         problems = notebook_result.get("problems", [])
-        execution_log = notebook_result.get("execution_log", "")
+        log = notebook_result.get("log", "")
         
         # 総合結果を計算
         total_earned = sum(p.get("student_score", 0) for p in problems)
@@ -70,10 +70,10 @@ class ResultViewer:
             print("\n⚠️ Problem別結果データが見つかりません")
         
         # 実行ログがある場合は表示
-        if execution_log and execution_log.strip():
+        if log and log.strip():
             print(f"\n🔍 実行ログ:")
             print("-" * 40)
-            print(execution_log)
+            print(log)
             print("-" * 40)
         
         print("\n" + "="*80)
@@ -279,7 +279,7 @@ class ResultViewer:
         
         notebook_result = result_data["notebook_results"]
         problems = notebook_result.get("problems", [])
-        execution_log = notebook_result.get("execution_log", "")
+        log = notebook_result.get("log", "")
         
         # 総合結果を計算
         total_earned = sum(p.get("student_score", 0) for p in problems)
@@ -394,11 +394,11 @@ class ResultViewer:
         html_content += "</div></div>"
         
         # 実行ログがある場合は追加
-        if execution_log and execution_log.strip():
+        if log and log.strip():
             html_content += f"""
                 <div style="margin-top: 15px;">
                     <strong>🔍 実行ログ:</strong>
-                    <div class="execution-log">{execution_log}</div>
+                    <div class="execution-log">{log}</div>
                 </div>
             """
         
