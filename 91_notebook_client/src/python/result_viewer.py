@@ -13,6 +13,47 @@ class ResultViewer:
     def __init__(self):
         pass
     
+    def _display_single_code_cell(self, code, indent="      "):
+        """
+        単一のコードセルを行番号付きで表示
+        
+        Args:
+            code (str): コード内容
+            indent (str): インデント文字列
+        """
+        # 複数行のコードを行番号付きで表示
+        lines = code.split('\n')
+        if len(lines) > 1:
+            for i, line in enumerate(lines, 1):
+                print(f"{indent}{i:>3}| {line}")
+        else:
+            print(f"{indent}{code}")
+    
+    def _display_student_code_cells(self, student_code_cells, base_indent="    "):
+        """
+        学生の提出コードセルを表示
+        
+        Args:
+            student_code_cells (list): 学生のコードセルリスト
+            base_indent (str): 基本インデント
+        """
+        if not student_code_cells:
+            print(f"{base_indent}💻 提出コード: (未検出)")
+            return
+        
+        print(f"{base_indent}💻 提出コード ({len(student_code_cells)}個):")
+        
+        if len(student_code_cells) == 1:
+            # 単一コードセルの場合
+            self._display_single_code_cell(student_code_cells[0], f"{base_indent}  ")
+            print()  # 空行を追加
+        else:
+            # 複数コードセルの場合
+            for j, code in enumerate(student_code_cells, 1):
+                print(f"{base_indent}  📝 コードセル{j}:")
+                self._display_single_code_cell(code, f"{base_indent}    ")
+                print()  # 空行を追加
+    
     def display_grading_result(self, result_data):
         """
         採点結果をProblem単位で表示
@@ -198,12 +239,7 @@ class ResultViewer:
                             
                             # 学生側コードセル（提出コード）
                             student_code_cells = sub_problem.get("student_code_cells", [])
-                            if student_code_cells:
-                                print(f"    💻 提出コード ({len(student_code_cells)}個):")
-                                for j, code in enumerate(student_code_cells, 1):
-                                    print(f"      {j}. {code}")
-                            else:
-                                print(f"    💻 提出コード: (未検出)")
+                            self._display_student_code_cells(student_code_cells)
                             
                             # 得点率（％表記）
                             student_score_rate = sub_problem.get("student_score_rate", 0.0)
