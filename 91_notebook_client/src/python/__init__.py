@@ -41,7 +41,7 @@ __all__ = [
 ]
 
 # 簡単な使用方法のための便利関数
-def create_submit_button(problem_number=1):
+def create_submit_button(problem_number=1, button_name="練習プログラム"):
     """
     送信ボタンを作成する便利関数
     
@@ -52,7 +52,7 @@ def create_submit_button(problem_number=1):
         widgets.VBox: 送信ウィジェット
     """
     widget_manager = SubmitWidget()
-    return widget_manager.create_submit_button(problem_number)
+    return widget_manager.create_submit_button(problem_number, button_name)
 
 def initialize_common_program():
     """

@@ -41,7 +41,7 @@ class SubmitWidget:
         
         print("送信ボタン用関数が読み込まれました（問題番号別送信ボタン検索・Notebook構造解析・localStorage/ファイル保存対応・送信時自動保存）")
     
-    def create_submit_button(self, problem_number=1):
+    def create_submit_button(self, problem_number=1, button_name="練習プログラム"):
         """
         実際の自動採点システム向け送信ボタンを作成（送信時自動保存機能付き）
         
@@ -71,10 +71,10 @@ class SubmitWidget:
         
         # 送信ボタン
         submit_button = widgets.Button(
-            description=f'📤 練習プログラム{problem_number} 送信',
+            description=f'📤 {button_name}{problem_number} 送信',
             disabled=False,
             button_style='success',
-            tooltip=f'練習プログラム{problem_number}の解答を送信',
+            tooltip=f'{button_name}{problem_number}の解答を送信',
             layout=widgets.Layout(width='250px')
         )
         

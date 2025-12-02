@@ -38,7 +38,7 @@ try:
         return widget_manager
     
     # URL設定付きの送信ボタン作成関数
-    def create_submit_button_with_config(problem_number=1):
+    def create_submit_button_with_config(problem_number=1, button_name="練習プログラム"):
         """環境変数を考慮した送信ボタン作成"""
         widget_manager = SubmitWidget()
         widget_manager.set_grading_system_url(GRADING_SYSTEM_URL)
@@ -48,7 +48,7 @@ try:
         if GLOBAL_NOTEBOOK_PATH:
             widget_manager.set_notebook_path(GLOBAL_NOTEBOOK_PATH)
         
-        return widget_manager.create_submit_button(problem_number)
+        return widget_manager.create_submit_button(problem_number,button_name)
     
     # ノートブック環境変数設定関数
     def set_notebook_config(notebook_path):
