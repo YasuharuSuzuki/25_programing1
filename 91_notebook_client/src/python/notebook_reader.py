@@ -5,6 +5,7 @@
 import json
 import os
 import glob
+import re
 from typing import List
 from datetime import datetime
 from .environment_detector import EnvironmentDetector
@@ -162,14 +163,16 @@ class NotebookReader:
             
             # 指定された問題番号の送信ボタンを検索
             submit_button_index = None
-            search_pattern = f"create_submit_button(problem_number={problem_number})"
+            # 正規表現パターン: create_submit_button(problem_number=X[, 任意の第二引数])
+            # 空白、改行、カンマ、第二引数に対応
+            search_pattern = rf"create_submit_button\(\s*problem_number\s*=\s*{problem_number}\s*(?:,.*?)?\)"
             
             for i, cell in enumerate(all_cells):
                 if cell.get('cell_type') == 'code' and 'source' in cell:
                     source = cell['source']
                     if isinstance(source, list):
                         source = ''.join(source)
-                    if search_pattern in source:
+                    if re.search(search_pattern, source, re.DOTALL):
                         submit_button_index = i
                         break
             
