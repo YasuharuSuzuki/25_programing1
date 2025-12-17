@@ -26,9 +26,9 @@ class GradingClient:
         # リトライ処理用のクラスフィールド
         self.current_submission_data = None
         self.current_attempt = 0
-        self.max_retries = 3
+        self.max_retries = 1
         # self.retry_delay = 10
-        self.retry_delay = 20
+        self.retry_delay = 60
         self.success_callback = None
         self.error_callback = None
     
@@ -453,7 +453,7 @@ class GradingClient:
             print("🛑 キャンセルする場合は Kernel → Interrupt を選択してください")
     
     
-    def _send_to_grading_system_with_retry(self, submission_data, max_retries=3, retry_delay=20, success_callback=None, error_callback=None):
+    def _send_to_grading_system_with_retry(self, submission_data, max_retries=1, retry_delay=60, success_callback=None, error_callback=None):
         """
         リトライ機能付きでCloudRunの自動採点システムに送信（新しい送信処理コールバック方式）
         

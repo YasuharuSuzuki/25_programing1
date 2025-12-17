@@ -154,7 +154,7 @@ class SubmitWidget:
             status_widget,
             email_widget,
             button_row,
-            widgets.HTML('<small>🔄=localStorage/ファイル保存、📡=3回リトライ機能付き送信、🔍=送信時自動保存</small>'),
+            widgets.HTML('<small>🔄=localStorage/ファイル保存、📡=1回リトライ機能付き送信、🔍=送信時自動保存</small>'),
             output_widget
         ], layout=widgets.Layout(
             border='2px solid #4CAF50',
